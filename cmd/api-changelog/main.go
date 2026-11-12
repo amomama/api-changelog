@@ -17,7 +17,7 @@ import (
 const (
 	defaultBase   = "origin/HEAD"
 	defaultSpec   = "docs/swagger.json"
-	changelogDir  = "changelog"
+	changelogExt  = ".md"
 	detachedHead  = "HEAD"
 	dirMode       = 0o755
 	fileMode      = 0o644
@@ -28,16 +28,16 @@ const (
 func main() {
 	base := flag.String("base", defaultBase, "git ref the branch is compared with")
 	specPath := flag.String("spec", defaultSpec, "swagger.json to compare")
-	outDir := flag.String("out", "", "directory the changelog is written to (default: <spec dir>/changelog)")
+	out := flag.String("out", "", "changelog file path (default: <spec dir>/<name>.md)")
 	name := flag.String("name", "", "changelog name (default: current branch)")
 	flag.Parse()
-	if err := run(*base, *specPath, *outDir, *name); err != nil {
+	if err := run(*base, *specPath, *out, *name); err != nil {
 		fmt.Fprintln(os.Stderr, "api-changelog:", err)
 		os.Exit(1)
 	}
 }
 
-func run(base, specPath, outDir, name string) error {
+func run(base, specPath, path, name string) error {
 	ctx := context.Background()
 	if name == "" {
 		branch, err := git(ctx, "rev-parse", "--abbrev-ref", "HEAD")
@@ -49,8 +49,8 @@ func run(base, specPath, outDir, name string) error {
 		}
 		name = branch
 	}
-	if outDir == "" {
-		outDir = filepath.Join(filepath.Dir(specPath), changelogDir)
+	if path == "" {
+		path = filepath.Join(filepath.Dir(specPath), strings.ReplaceAll(name, "/", "-")+changelogExt)
 	}
 	mergeBase, err := git(ctx, "merge-base", "HEAD", base)
 	if err != nil {
@@ -72,7 +72,6 @@ func run(base, specPath, outDir, name string) error {
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(outDir, strings.ReplaceAll(name, "/", "-")+".md")
 	if sections == "" {
 		return remove(path, base)
 	}

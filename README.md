@@ -19,26 +19,26 @@ Requires Go 1.24 for the `tool` directive.
 | --- | --- | --- |
 | `-spec` | `docs/swagger.json` | swagger.json to compare |
 | `-base` | `origin/HEAD` | git ref the branch is compared with |
-| `-out` | `<dir of spec>/changelog` | directory the changelog file is written to |
-| `-name` | current branch | name used in the header and the file name (`/` becomes `-`); required on a detached HEAD, e.g. in CI |
-
-The file is written to `<out>/<name>.md`.
+| `-out` | `<dir of spec>/<name>.md` | changelog file path |
+| `-name` | current branch | name used in the header and the default file name (`/` becomes `-`); required on a detached HEAD, e.g. in CI |
 
 ## Makefile example
 
-A repo with two swag specs:
+A repo with two swag specs, writing each changelog to a `changelog` directory next to its spec:
 
 ```make
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr / -)
+
 changelog:
 	swag init -g cmd/api/main.go --output docs/api
 	swag init -g cmd/partner_api/main.go --output docs/partner_api
-	go tool api-changelog -spec docs/api/swagger.json -base origin/stage
-	go tool api-changelog -spec docs/partner_api/swagger.json -base origin/stage
+	go tool api-changelog -spec docs/api/swagger.json -base origin/stage -out docs/api/changelog/$(BRANCH).md
+	go tool api-changelog -spec docs/partner_api/swagger.json -base origin/stage -out docs/partner_api/changelog/$(BRANCH).md
 ```
 
 ## Example
 
-Branch `feature/book-isbn` adds `POST /books`, a `status` filter and limit on `GET /books`, an `isbn` field and an `archived` status on `Book`, raises the `title` limit, and drops `POST /books/legacy-import`. `go tool api-changelog -base main` writes `docs/changelog/feature-book-isbn.md`:
+Branch `feature/book-isbn` adds `POST /books`, a `status` filter and limit on `GET /books`, an `isbn` field and an `archived` status on `Book`, raises the `title` limit, and drops `POST /books/legacy-import`. `go tool api-changelog -base main` writes `docs/feature-book-isbn.md`:
 
 ````markdown
 # API changes: feature/book-isbn
