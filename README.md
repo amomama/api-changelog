@@ -15,13 +15,11 @@ Requires Go 1.24 for the `tool` directive.
 
 ## Flags
 
-| Flag | Default | Meaning |
-| --- | --- | --- |
-| `-spec` | `docs/swagger.json` | swagger.json to compare |
-| `-base` | `origin/HEAD` | git ref the head is compared with |
-| `-head` | `HEAD` | git ref compared with the base; `HEAD` reads the spec from the working tree, so uncommitted `swag init` output counts, any other ref reads it from that commit |
-| `-out` | `<dir of spec>/<name>.md` | changelog file path |
-| `-name` | head branch | name used in the header and the default file name (`/` becomes `-`); required when the head is not a branch, e.g. a commit or a detached HEAD in CI |
+- `-spec`, default `docs/swagger.json`: swagger.json to compare.
+- `-base`, default `origin/HEAD`: git ref the head is compared with.
+- `-head`, default `HEAD`: git ref compared with the base. `HEAD` reads the spec from the working tree, so uncommitted `swag init` output counts; any other ref reads it from that commit.
+- `-out`, default `<dir of spec>/<name>.md`: changelog file path.
+- `-name`, default the head branch: name used in the header and the default file name (`/` becomes `-`). Required when the head is not a branch, e.g. a commit or a detached HEAD in CI.
 
 ## Makefile example
 
@@ -39,61 +37,59 @@ swag:
 
 Branch `feature/book-isbn` adds `POST /books`, a `status` filter and limit on `GET /books`, an `isbn` field and an `archived` status on `Book`, raises the `title` limit, and drops `POST /books/legacy-import`. `go tool api-changelog -base main` writes `docs/feature-book-isbn.md`:
 
-````markdown
-# API changes: feature/book-isbn
-
-Compared with `main` at merge base `485494e`.
-
-### GET /books · changed
-
-- Parameter `limit` maximum `100` added
-- Parameter `status` added (query, string, one of draft, published, archived): Filter by status
-- Response `200`: field `[].isbn` added (string): ISBN-13
-- Response `200`: field `[].status` value `archived` added
-- Response `200`: field `[].title` maxLength changed from `200` to `500`
-
-### POST /books · added
-
-**Create book**
-
-Consumes `application/json` · Produces `application/json`
-
-**Request body** `CreateBookRequest` (required)
-
-```json
-{
-  "title": "string",
-  "isbn": "string"
-}
-```
-
-**Response** `IDResponse`
-
-- `200` OK
-
-```json
-{
-  "id": 0
-}
-```
-
-**Response** `Error`
-
-- `422` Validation error
-
-```json
-{
-  "message": "string"
-}
-```
-
-### POST /books/legacy-import · removed
-
-**Import books from the legacy catalog**
-
-### GET /books/{id} · changed
-
-- Response `200`: field `isbn` added (string): ISBN-13
-- Response `200`: field `status` value `archived` added
-- Response `200`: field `title` maxLength changed from `200` to `500`
-````
+> # API changes: feature/book-isbn
+>
+> Compared with `main` at merge base `485494e`.
+>
+> ### GET /books · changed
+>
+> - Parameter `limit` maximum `100` added
+> - Parameter `status` added (query, string, one of draft, published, archived): Filter by status
+> - Response `200`: field `[].isbn` added (string): ISBN-13
+> - Response `200`: field `[].status` value `archived` added
+> - Response `200`: field `[].title` maxLength changed from `200` to `500`
+>
+> ### POST /books · added
+>
+> **Create book**
+>
+> Consumes `application/json` · Produces `application/json`
+>
+> **Request body** `CreateBookRequest` (required)
+>
+> ```json
+> {
+>   "title": "string",
+>   "isbn": "string"
+> }
+> ```
+>
+> **Response** `IDResponse`
+>
+> - `200` OK
+>
+> ```json
+> {
+>   "id": 0
+> }
+> ```
+>
+> **Response** `Error`
+>
+> - `422` Validation error
+>
+> ```json
+> {
+>   "message": "string"
+> }
+> ```
+>
+> ### POST /books/legacy-import · removed
+>
+> **Import books from the legacy catalog**
+>
+> ### GET /books/{id} · changed
+>
+> - Response `200`: field `isbn` added (string): ISBN-13
+> - Response `200`: field `status` value `archived` added
+> - Response `200`: field `title` maxLength changed from `200` to `500`
