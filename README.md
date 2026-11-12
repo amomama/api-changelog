@@ -35,3 +35,66 @@ changelog:
 	go tool api-changelog -spec docs/api/swagger.json -base origin/stage
 	go tool api-changelog -spec docs/partner_api/swagger.json -base origin/stage
 ```
+
+## Example
+
+Branch `feature/book-isbn` adds `POST /books`, a `status` filter and limit on `GET /books`, an `isbn` field and an `archived` status on `Book`, raises the `title` limit, and drops `POST /books/legacy-import`. `go tool api-changelog -base main` writes `docs/changelog/feature-book-isbn.md`:
+
+````markdown
+# API changes: feature/book-isbn
+
+Compared with `main` at merge base `485494e`.
+
+### GET /books · changed
+
+- Parameter `limit` maximum `100` added
+- Parameter `status` added (query, string, one of draft, published, archived): Filter by status
+- Response `200`: field `[].isbn` added (string): ISBN-13
+- Response `200`: field `[].status` value `archived` added
+- Response `200`: field `[].title` maxLength changed from `200` to `500`
+
+### POST /books · added
+
+**Create book**
+
+Consumes `application/json` · Produces `application/json`
+
+**Request body** `CreateBookRequest` (required)
+
+```json
+{
+  "title": "string",
+  "isbn": "string"
+}
+```
+
+**Response** `IDResponse`
+
+- `200` OK
+
+```json
+{
+  "id": 0
+}
+```
+
+**Response** `Error`
+
+- `422` Validation error
+
+```json
+{
+  "message": "string"
+}
+```
+
+### POST /books/legacy-import · removed
+
+**Import books from the legacy catalog**
+
+### GET /books/{id} · changed
+
+- Response `200`: field `isbn` added (string): ISBN-13
+- Response `200`: field `status` value `archived` added
+- Response `200`: field `title` maxLength changed from `200` to `500`
+````
