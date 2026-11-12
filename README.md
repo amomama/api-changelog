@@ -24,16 +24,14 @@ Requires Go 1.24 for the `tool` directive.
 
 ## Makefile example
 
-A repo with two swag specs, writing each changelog to a `changelog` directory next to its spec:
+Regenerating the spec and writing the changelog to a `changelog` directory next to it:
 
 ```make
-BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr / -)
+BRANCH = $(shell git rev-parse --abbrev-ref HEAD | tr / -)
 
-changelog:
-	swag init -g cmd/api/main.go --output docs/api
-	swag init -g cmd/partner_api/main.go --output docs/partner_api
-	go tool api-changelog -spec docs/api/swagger.json -base origin/stage -out docs/api/changelog/$(BRANCH).md
-	go tool api-changelog -spec docs/partner_api/swagger.json -base origin/stage -out docs/partner_api/changelog/$(BRANCH).md
+swag:
+	swag init -g cmd/server/main.go --output docs/server
+	go tool api-changelog -spec docs/server/swagger.json -base origin/main -out docs/server/changelog/$(BRANCH).md
 ```
 
 ## Example
