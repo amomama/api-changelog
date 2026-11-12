@@ -21,7 +21,20 @@ type field struct {
 	required    bool
 	enum        []enumValue
 	def         string
+	constraints constraints
 	description string
+}
+
+type constraints map[string]string
+
+func constraintsOf(node omap) constraints {
+	out := constraints{}
+	for _, key := range constraintKeys {
+		if value := node.get(key); value != nil {
+			out[key] = valueText(value)
+		}
+	}
+	return out
 }
 
 type enumValue struct{ value, name string }
@@ -156,6 +169,7 @@ func addProperties(node omap, prefix, parent string, out map[string]field) {
 			required:    slices.Contains(required, p.key),
 			enum:        enumValues(child.get(enumKey), child.get(enumNamesKey)),
 			def:         valueText(child.get(defaultKey)),
+			constraints: constraintsOf(child),
 			description: description,
 		}
 		collectFields(child, name, out)
@@ -211,7 +225,7 @@ func enumValues(values, names any) []enumValue {
 	return out
 }
 
-func facts(typ string, enum []enumValue, def string) string {
+func facts(typ string, enum []enumValue, def string, limits constraints) string {
 	parts := []string{typ}
 	if len(enum) > 0 {
 		values := make([]string, len(enum))
@@ -222,6 +236,11 @@ func facts(typ string, enum []enumValue, def string) string {
 	}
 	if def != "" {
 		parts = append(parts, "default "+def)
+	}
+	for _, key := range constraintKeys {
+		if value, ok := limits[key]; ok {
+			parts = append(parts, key+" "+value)
+		}
 	}
 	return strings.Join(parts, ", ")
 }
@@ -318,4 +337,9 @@ func buildView(sp *spec, k endpointKey) (*view, error) {
 		v.resp[code] = rv
 	}
 	return v, nil
+}
+
+var constraintKeys = []string{
+	minimumKey, exclusiveMinimumKey, maximumKey, exclusiveMaximumKey, multipleOfKey, minLengthKey, maxLengthKey,
+	patternKey, minItemsKey, maxItemsKey, uniqueItemsKey, minPropertiesKey, maxPropertiesKey,
 }

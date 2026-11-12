@@ -2,7 +2,7 @@
 
 Compares the Swagger 2.0 `swagger.json` in the working tree with the same file at the merge base with a base ref, and writes a markdown changelog of the endpoint changes. Run it after `swag init` (or any generator that writes `swagger.json`).
 
-It reports per endpoint (method and path): added or removed endpoints, deprecation, `consumes`/`produces`, parameters (type, `in`, required, enum), request body fields and response fields (type, required, enum, nested fields, `$ref`s inlined). A pure definition rename produces no change. With no changes the changelog file is deleted.
+It reports per endpoint (method and path): added or removed endpoints, deprecation, `consumes`/`produces`, parameters (type, `in`, required, enum, validation keywords), request body fields and response fields (type, required, enum, validation keywords, nested fields, `$ref`s inlined). A pure definition rename produces no change. With no changes the changelog file is deleted.
 
 ## Install
 

@@ -153,8 +153,45 @@ var bodyParameterCases = []renderCase{
 	},
 }
 
+var constraintCases = []renderCase{
+	{
+		name: "field maxLength changed",
+		base: swagger(`{"/pets":{"post":{"parameters":[{"name":"body","in":"body","schema":{"$ref":"#/definitions/Pet"}}],
+			"responses":{}}}}`, `{"Pet":{"type":"object","properties":{"accessToken":{"type":"string","maxLength":255}}}}`),
+		head: swagger(`{"/pets":{"post":{"parameters":[{"name":"body","in":"body","schema":{"$ref":"#/definitions/Pet"}}],
+			"responses":{}}}}`, `{"Pet":{"type":"object","properties":{"accessToken":{"type":"string","maxLength":500}}}}`),
+		want: "### POST /pets · changed\n\n- Request body: field `accessToken` maxLength changed from `255` to `500`",
+	},
+	{
+		name: "response field minItems added",
+		base: swagger(`{"/pets":{"get":{"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Pet"}}}}}}`,
+			`{"Pet":{"type":"object","properties":{"ids":{"type":"array","items":{"type":"integer"}}}}}`),
+		head: swagger(`{"/pets":{"get":{"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Pet"}}}}}}`,
+			`{"Pet":{"type":"object","properties":{"ids":{"type":"array","minItems":1,"items":{"type":"integer"}}}}}`),
+		want: "### GET /pets · changed\n\n- Response `200`: field `ids` minItems `1` added",
+	},
+	{
+		name: "parameter maximum removed",
+		base: swagger(`{"/pets":{"get":{"parameters":[{"name":"limit","in":"query","type":"integer","maximum":100}],
+			"responses":{}}}}`, `{}`),
+		head: swagger(`{"/pets":{"get":{"parameters":[{"name":"limit","in":"query","type":"integer"}],
+			"responses":{}}}}`, `{}`),
+		want: "### GET /pets · changed\n\n- Parameter `limit` maximum `100` removed",
+	},
+	{
+		name: "added field and parameter list their keywords",
+		base: swagger(`{"/pets":{"get":{"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Pet"}}}}}}`,
+			`{"Pet":{"type":"object","properties":{}}}`),
+		head: swagger(`{"/pets":{"get":{"parameters":[{"name":"limit","in":"query","type":"integer","minimum":1,
+			"maximum":100,"required":true}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Pet"}}}}}}`,
+			`{"Pet":{"type":"object","properties":{"name":{"type":"string","maxLength":500,"pattern":"^a"}}}}`),
+		want: "### GET /pets · changed\n\n- Parameter `limit` added (query, integer, minimum 1, maximum 100, required)\n" +
+			"- Response `200`: field `name` added (string, maxLength 500, pattern ^a)",
+	},
+}
+
 func TestRender(t *testing.T) {
-	for _, tt := range append(slices.Clone(renderCases), bodyParameterCases...) {
+	for _, tt := range slices.Concat(renderCases, bodyParameterCases, constraintCases) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := changelog.Render(tt.base, tt.head)
 			require.NoError(t, err)

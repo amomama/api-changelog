@@ -49,6 +49,7 @@ func parameterChanges(base, head []parameter) []string {
 			list = append(list, typeChange(label, parameterType(old), parameterType(cur))...)
 			list = append(list, requiredChange(label, old.Required, cur.Required)...)
 			list = append(list, enumChanges(label, enumValues(old.Enum, nil), enumValues(cur.Enum, nil))...)
+			list = append(list, constraintChanges(label, old.constraints, cur.constraints)...)
 		}
 	}
 	return list
@@ -131,7 +132,8 @@ func fieldChanges(base, head map[string]field) []string {
 		case !inBase:
 			added[name] = true
 			if !added[cur.parent] {
-				list = append(list, withDescription(label+" added ("+facts(cur.typ, cur.enum, cur.def)+")", cur.description))
+				text := label + " added (" + facts(cur.typ, cur.enum, cur.def, cur.constraints) + ")"
+				list = append(list, withDescription(text, cur.description))
 			}
 		case !inHead:
 			removed[name] = true
@@ -142,6 +144,7 @@ func fieldChanges(base, head map[string]field) []string {
 			list = append(list, typeChange(label, old.typ, cur.typ)...)
 			list = append(list, requiredChange(label, old.required, cur.required)...)
 			list = append(list, enumChanges(label, old.enum, cur.enum)...)
+			list = append(list, constraintChanges(label, old.constraints, cur.constraints)...)
 		}
 	}
 	return list
@@ -174,6 +177,23 @@ func enumChanges(label string, base, head []enumValue) []string {
 	for _, v := range head {
 		if !hasValue(base, v.value) {
 			list = append(list, fmt.Sprintf("%s value %s added", label, v.quoted()))
+		}
+	}
+	return list
+}
+
+func constraintChanges(label string, base, head constraints) []string {
+	var list []string
+	for _, key := range constraintKeys {
+		old, inBase := base[key]
+		cur, inHead := head[key]
+		switch {
+		case !inBase && inHead:
+			list = append(list, fmt.Sprintf("%s %s `%s` added", label, key, cur))
+		case inBase && !inHead:
+			list = append(list, fmt.Sprintf("%s %s `%s` removed", label, key, old))
+		case old != cur:
+			list = append(list, fmt.Sprintf("%s %s changed from `%s` to `%s`", label, key, old, cur))
 		}
 	}
 	return list

@@ -8,40 +8,53 @@ import (
 )
 
 const (
-	definitionPrefix = "#/definitions/"
-	refKey           = "$ref"
-	typeKey          = "type"
-	formatKey        = "format"
-	enumKey          = "enum"
-	requiredKey      = "required"
-	propertiesKey    = "properties"
-	itemsKey         = "items"
-	allOfKey         = "allOf"
-	enumNamesKey     = "x-enum-varnames"
-	defaultKey       = "default"
-	descriptionKey   = "description"
-	exampleKey       = "example"
-	arrayType        = "array"
-	objectType       = "object"
-	stringType       = "string"
-	integerType      = "integer"
-	numberType       = "number"
-	booleanType      = "boolean"
-	sampleString     = "string"
-	sampleNumber     = 0
-	sampleBoolean    = true
-	arrayItems       = "[]"
-	bodyIn           = "body"
-	jsonIndent       = "  "
-	jsonFenceStart   = "```json\n"
-	jsonFenceEnd     = "\n```"
-	stateAdded       = "added"
-	stateChanged     = "changed"
-	stateRemoved     = "removed"
-	contentSeparator = " · "
-	partSeparator    = "\n\n"
-	listItemPrefix   = "- "
-	noValue          = "none"
+	maximumKey          = "maximum"
+	exclusiveMaximumKey = "exclusiveMaximum"
+	minimumKey          = "minimum"
+	exclusiveMinimumKey = "exclusiveMinimum"
+	multipleOfKey       = "multipleOf"
+	maxLengthKey        = "maxLength"
+	minLengthKey        = "minLength"
+	patternKey          = "pattern"
+	maxItemsKey         = "maxItems"
+	minItemsKey         = "minItems"
+	uniqueItemsKey      = "uniqueItems"
+	maxPropertiesKey    = "maxProperties"
+	minPropertiesKey    = "minProperties"
+	definitionPrefix    = "#/definitions/"
+	refKey              = "$ref"
+	typeKey             = "type"
+	formatKey           = "format"
+	enumKey             = "enum"
+	requiredKey         = "required"
+	propertiesKey       = "properties"
+	itemsKey            = "items"
+	allOfKey            = "allOf"
+	enumNamesKey        = "x-enum-varnames"
+	defaultKey          = "default"
+	descriptionKey      = "description"
+	exampleKey          = "example"
+	arrayType           = "array"
+	objectType          = "object"
+	stringType          = "string"
+	integerType         = "integer"
+	numberType          = "number"
+	booleanType         = "boolean"
+	sampleString        = "string"
+	sampleNumber        = 0
+	sampleBoolean       = true
+	arrayItems          = "[]"
+	bodyIn              = "body"
+	jsonIndent          = "  "
+	jsonFenceStart      = "```json\n"
+	jsonFenceEnd        = "\n```"
+	stateAdded          = "added"
+	stateChanged        = "changed"
+	stateRemoved        = "removed"
+	contentSeparator    = " · "
+	partSeparator       = "\n\n"
+	listItemPrefix      = "- "
+	noValue             = "none"
 )
 
 func renderSection(k endpointKey, baseSpec, headSpec *spec) (string, error) {
@@ -146,7 +159,7 @@ func parameterList(params []parameter) string {
 func parameterText(p parameter) string {
 	text := p.In
 	if typ := parameterType(p); typ != "" {
-		text += ", " + facts(typ, enumValues(p.Enum, nil), valueText(p.Default))
+		text += ", " + facts(typ, enumValues(p.Enum, nil), valueText(p.Default), p.constraints)
 	}
 	if p.Required {
 		text += ", required"

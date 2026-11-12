@@ -29,6 +29,21 @@ type parameter struct {
 	Required    bool            `json:"required"`
 	Description string          `json:"description"`
 	Schema      json.RawMessage `json:"schema"`
+	constraints constraints
+}
+
+func (p *parameter) UnmarshalJSON(data []byte) error {
+	type plain parameter
+	if err := json.Unmarshal(data, (*plain)(p)); err != nil {
+		return err
+	}
+	parsed, err := parseOrdered(data)
+	if err != nil {
+		return err
+	}
+	node, _ := parsed.(omap)
+	p.constraints = constraintsOf(node)
+	return nil
 }
 
 type response struct {
