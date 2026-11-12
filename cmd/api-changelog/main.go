@@ -25,11 +25,12 @@ const (
 	fileMode      = 0o644
 	noChanges     = "no API changes against "
 	partSeparator = "\n\n"
+	logPrefix     = "api-changelog: "
 )
 
 func main() {
 	log.SetFlags(0)
-	log.SetPrefix("api-changelog: ")
+	log.SetPrefix(logPrefix)
 
 	base := flag.String("base", defaultBase, "git ref the head is compared with")
 	head := flag.String("head", workingTree, "git ref compared with the base; HEAD reads the spec from the working tree")
