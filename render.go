@@ -122,7 +122,9 @@ func addedParts(k endpointKey, head *view) []string {
 	}
 	parts = append(parts, escapeMarkdown(head.op.Description), contentTypes(head.op))
 	parts = append(parts, parameterList(head.params), requestBody(head.body))
-	parts = append(parts, responseBlocks(head)...)
+	for _, g := range groupResponses(head.resp) {
+		parts = append(parts, responseBlock(g, head))
+	}
 	return slices.DeleteFunc(parts, isEmpty)
 }
 
@@ -200,14 +202,6 @@ func groupResponses(resp map[string]respView) []responseGroup {
 		groups[i].codes = append(groups[i].codes, code)
 	}
 	return groups
-}
-
-func responseBlocks(head *view) []string {
-	var blocks []string
-	for _, g := range groupResponses(head.resp) {
-		blocks = append(blocks, responseBlock(g, head))
-	}
-	return blocks
 }
 
 func responseBlock(g responseGroup, head *view) string {

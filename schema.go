@@ -39,10 +39,6 @@ func constraintsOf(node omap) constraints {
 
 type enumValue struct{ value, name string }
 
-func (e enumValue) String() string {
-	return strings.TrimSpace(e.value + " " + e.name)
-}
-
 func (e enumValue) quoted() string {
 	if e.name == "" {
 		return "`" + e.value + "`"
@@ -178,7 +174,8 @@ func addProperties(node omap, prefix, parent string, out map[string]field) {
 
 func typeLabel(node omap) string {
 	node = mergeAllOf(node)
-	if name, ok := node.ref(); ok {
+	name, ok := node.ref()
+	if ok {
 		return name
 	}
 	typ, _ := node.get(typeKey).(string)
@@ -230,7 +227,7 @@ func facts(typ string, enum []enumValue, def string, limits constraints) string 
 	if len(enum) > 0 {
 		values := make([]string, len(enum))
 		for i, e := range enum {
-			values[i] = e.String()
+			values[i] = strings.TrimSpace(e.value + " " + e.name)
 		}
 		parts = append(parts, "one of "+strings.Join(values, ", "))
 	}

@@ -83,7 +83,25 @@ func responseChanges(base, head map[string]respView) []string {
 	var order []string
 	codes := map[string][]string{}
 	for _, code := range unionKeys(base, head) {
-		for _, c := range responseCodeChanges(base, head, code) {
+		old, inBase := base[code]
+		cur, inHead := head[code]
+		var codeChanges []string
+		switch {
+		case !inBase:
+			codeChanges = []string{" added"}
+		case !inHead:
+			codeChanges = []string{" removed"}
+		case old.example == "" && cur.example != "":
+			codeChanges = []string{" body added"}
+		case old.example != "" && cur.example == "":
+			codeChanges = []string{" body removed"}
+		default:
+			codeChanges = fieldChanges(old.fields, cur.fields)
+			for i, c := range codeChanges {
+				codeChanges[i] = ": " + c
+			}
+		}
+		for _, c := range codeChanges {
 			if _, ok := codes[c]; !ok {
 				order = append(order, c)
 			}
@@ -97,26 +115,6 @@ func responseChanges(base, head map[string]respView) []string {
 			label = "Responses "
 		}
 		list[i] = label + codeList(codes[c]) + c
-	}
-	return list
-}
-
-func responseCodeChanges(base, head map[string]respView, code string) []string {
-	old, inBase := base[code]
-	cur, inHead := head[code]
-	switch {
-	case !inBase:
-		return []string{" added"}
-	case !inHead:
-		return []string{" removed"}
-	case old.example == "" && cur.example != "":
-		return []string{" body added"}
-	case old.example != "" && cur.example == "":
-		return []string{" body removed"}
-	}
-	list := fieldChanges(old.fields, cur.fields)
-	for i, c := range list {
-		list[i] = ": " + c
 	}
 	return list
 }
