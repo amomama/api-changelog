@@ -1,6 +1,6 @@
 # api-changelog
 
-Compares the Swagger 2.0 `swagger.json` in the working tree with the same file at the merge base with a base ref, and writes a markdown changelog of the endpoint changes. Run it after `swag init` (or any generator that writes `swagger.json`).
+Compares the Swagger 2.0 `swagger.json` at a head ref (by default the working tree) with the same file at its merge base with a base ref, and writes a markdown changelog of the endpoint changes. Run it after `swag init` (or any generator that writes `swagger.json`).
 
 It reports per endpoint (method and path): added or removed endpoints, deprecation, `consumes`/`produces`, parameters (type, `in`, required, enum, validation keywords), request body fields and response fields (type, required, enum, validation keywords, nested fields, `$ref`s inlined). A pure definition rename produces no change. With no changes the changelog file is deleted.
 
@@ -18,9 +18,10 @@ Requires Go 1.24 for the `tool` directive.
 | Flag | Default | Meaning |
 | --- | --- | --- |
 | `-spec` | `docs/swagger.json` | swagger.json to compare |
-| `-base` | `origin/HEAD` | git ref the branch is compared with |
+| `-base` | `origin/HEAD` | git ref the head is compared with |
+| `-head` | `HEAD` | git ref compared with the base; `HEAD` reads the spec from the working tree, so uncommitted `swag init` output counts, any other ref reads it from that commit |
 | `-out` | `<dir of spec>/<name>.md` | changelog file path |
-| `-name` | current branch | name used in the header and the default file name (`/` becomes `-`); required on a detached HEAD, e.g. in CI |
+| `-name` | head branch | name used in the header and the default file name (`/` becomes `-`); required when the head is not a branch, e.g. a commit or a detached HEAD in CI |
 
 ## Makefile example
 
