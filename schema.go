@@ -250,6 +250,30 @@ type view struct {
 	resp   map[string]respView
 }
 
+func mergeBodies(bodies []parameter) (parameter, error) {
+	props := make(omap, len(bodies))
+	required := []any{}
+	merged := parameter{In: bodyIn}
+	for i, p := range bodies {
+		parsed, err := parseOrdered(p.Schema)
+		if err != nil {
+			return parameter{}, err
+		}
+		schema, _ := parsed.(omap)
+		if p.Description != "" {
+			schema = overlay(schema, omap{{descriptionKey, p.Description}})
+		}
+		props[i] = member{p.Name, schema}
+		if p.Required {
+			required = append(required, p.Name)
+			merged.Required = true
+		}
+	}
+	raw, err := marshal(omap{{typeKey, objectType}, {propertiesKey, props}, {requiredKey, required}})
+	merged.Schema = raw
+	return merged, err
+}
+
 func buildView(sp *spec, k endpointKey) (*view, error) {
 	raw, ok := sp.Paths[k.path][k.method]
 	if !ok {
@@ -260,11 +284,22 @@ func buildView(sp *spec, k endpointKey) (*view, error) {
 		return nil, err
 	}
 	in := inliner{sp.Definitions}
+	var bodies []parameter
 	for _, p := range v.op.Parameters {
-		if p.In != bodyIn {
+		if p.In == bodyIn {
+			bodies = append(bodies, p)
+		} else {
 			v.params = append(v.params, p)
-			continue
 		}
+	}
+	if len(bodies) > 1 {
+		merged, err := mergeBodies(bodies)
+		if err != nil {
+			return nil, err
+		}
+		bodies = []parameter{merged}
+	}
+	for _, p := range bodies {
 		s, err := in.parseSchema(p.Schema)
 		if err != nil {
 			return nil, err

@@ -2,6 +2,7 @@ package changelog_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -107,8 +108,53 @@ var renderCases = []renderCase{
 	},
 }
 
+var bodyParameterCases = []renderCase{
+	{
+		name: "body parameters merged into one object",
+		base: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","description":"Pet name","required":true,"schema":{"type":"string"}},
+			{"name":"tags","in":"body","schema":{"type":"array","items":{"type":"string"}}}],"responses":{}}}}`, `{}`),
+		head: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","description":"Pet name","required":true,"schema":{"type":"string"}},
+			{"name":"tags","in":"body","schema":{"type":"array","items":{"type":"string"}}},
+			{"name":"age","in":"body","schema":{"type":"integer"}}],"responses":{}}}}`, `{}`),
+		want: "### POST /pets · changed\n\n- Request body: field `age` added (integer)",
+	},
+	{
+		name: "added endpoint renders merged body as object",
+		base: swagger(`{}`, `{}`),
+		head: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","required":true,"schema":{"type":"string"}},
+			{"name":"age","in":"body","schema":{"type":"integer"}}],"responses":{}}}}`, `{}`),
+		want: "### POST /pets · added\n\n**Request body** `object` (required)\n\n" +
+			"```json\n{\n  \"name\": \"string\",\n  \"age\": 0\n}\n```",
+	},
+	{
+		name: "refactor to one DTO body shows no added fields",
+		base: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","required":true,"schema":{"type":"string"}},
+			{"name":"age","in":"body","schema":{"type":"integer"}}],"responses":{}}}}`, `{}`),
+		head: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"body","in":"body","required":true,"schema":{"$ref":"#/definitions/Pet"}}],"responses":{}}}}`,
+			`{"Pet":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},
+			"age":{"type":"integer"}}}}`),
+		want: "",
+	},
+	{
+		name: "merged body is required when any parameter is",
+		base: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","schema":{"type":"string"}},
+			{"name":"age","in":"body","schema":{"type":"integer"}}],"responses":{}}}}`, `{}`),
+		head: swagger(`{"/pets":{"post":{"parameters":[
+			{"name":"name","in":"body","required":true,"schema":{"type":"string"}},
+			{"name":"age","in":"body","schema":{"type":"integer"}}],"responses":{}}}}`, `{}`),
+		want: "### POST /pets · changed\n\n- Request body is now required\n" +
+			"- Request body: field `name` is now required",
+	},
+}
+
 func TestRender(t *testing.T) {
-	for _, tt := range renderCases {
+	for _, tt := range append(slices.Clone(renderCases), bodyParameterCases...) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := changelog.Render(tt.base, tt.head)
 			require.NoError(t, err)
