@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,45 +28,77 @@ const (
 )
 
 func main() {
+	log.SetFlags(0)
+	log.SetPrefix("api-changelog: ")
+
 	base := flag.String("base", defaultBase, "git ref the head is compared with")
 	head := flag.String("head", workingTree, "git ref compared with the base; HEAD reads the spec from the working tree")
 	specPath := flag.String("spec", defaultSpec, "swagger.json to compare")
 	out := flag.String("out", "", "changelog file path (default: <spec dir>/<name>.md)")
 	name := flag.String("name", "", "changelog name (default: head branch)")
 	flag.Parse()
-	if err := run(*base, *head, *specPath, *out, *name); err != nil {
-		fmt.Fprintln(os.Stderr, "api-changelog:", err)
-		os.Exit(1)
+
+	ctx := context.Background()
+	if *name == "" {
+		branch, err := git(ctx, "rev-parse", "--abbrev-ref", *head)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if branch == "" || branch == detachedHead {
+			log.Fatalf("%s is not a branch: check out a branch or pass -name", *head)
+		}
+		*name = branch
+	}
+	path := *out
+	if path == "" {
+		path = filepath.Join(filepath.Dir(*specPath), strings.ReplaceAll(*name, "/", "-")+changelogExt)
+	}
+
+	baseJSON, headJSON, short, err := readSpecs(ctx, *base, *head, *specPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sections, err := changelog.Render(baseJSON, headJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if sections == "" {
+		fmt.Println(noChanges + *base)
+		err = os.Remove(path)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Fatal(err)
+		}
+		return
+	}
+	header := fmt.Sprintf("# API changes: %s\n\nCompared with `%s` at merge base `%s`.", *name, *base, short)
+	doc := header + partSeparator + sections + "\n"
+	err = os.MkdirAll(filepath.Dir(path), dirMode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("wrote", path)
+	err = os.WriteFile(path, []byte(doc), fileMode) //nolint:gosec // output path is chosen by the developer
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
-func run(base, head, specPath, path, name string) error {
-	ctx := context.Background()
-	if name == "" {
-		branch, err := git(ctx, "rev-parse", "--abbrev-ref", head)
-		if err != nil {
-			return err
-		}
-		if branch == "" || branch == detachedHead {
-			return fmt.Errorf("%s is not a branch: check out a branch or pass -name", head)
-		}
-		name = branch
-	}
-	if path == "" {
-		path = filepath.Join(filepath.Dir(specPath), strings.ReplaceAll(name, "/", "-")+changelogExt)
-	}
+func readSpecs(ctx context.Context, base, head, specPath string) ([]byte, []byte, string, error) {
 	mergeBase, err := git(ctx, "merge-base", head, base)
 	if err != nil {
-		return err
+		return nil, nil, "", err
 	}
 	short, err := git(ctx, "rev-parse", "--short", mergeBase)
 	if err != nil {
-		return err
+		return nil, nil, "", err
 	}
+
 	specInRepo := filepath.ToSlash(filepath.Clean(specPath))
 	baseJSON, err := gitRaw(ctx, "show", mergeBase+":"+specInRepo)
 	if err != nil {
-		return err
+		return nil, nil, "", err
 	}
 	var headJSON []byte
 	if head == workingTree {
@@ -74,34 +107,9 @@ func run(base, head, specPath, path, name string) error {
 		headJSON, err = gitRaw(ctx, "show", head+":"+specInRepo)
 	}
 	if err != nil {
-		return err
+		return nil, nil, "", err
 	}
-	sections, err := changelog.Render(baseJSON, headJSON)
-	if err != nil {
-		return err
-	}
-	if sections == "" {
-		return remove(path, base)
-	}
-	header := fmt.Sprintf("# API changes: %s\n\nCompared with `%s` at merge base `%s`.", name, base, short)
-	return write(path, header+partSeparator+sections+"\n")
-}
-
-func remove(path, base string) error {
-	fmt.Println(noChanges + base)
-	err := os.Remove(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	return err
-}
-
-func write(path, doc string) error {
-	if err := os.MkdirAll(filepath.Dir(path), dirMode); err != nil {
-		return err
-	}
-	fmt.Println("wrote", path)
-	return os.WriteFile(path, []byte(doc), fileMode) //nolint:gosec // output path is chosen by the developer
+	return baseJSON, headJSON, short, nil
 }
 
 func gitRaw(ctx context.Context, args ...string) ([]byte, error) {
