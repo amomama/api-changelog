@@ -15,11 +15,15 @@ Requires Go 1.24 for the `tool` directive.
 
 ## Flags
 
-- `-spec`, default `docs/swagger.json`: swagger.json to compare.
-- `-base`, default `origin/HEAD`: git ref the head is compared with.
-- `-head`, default `HEAD`: git ref compared with the base. `HEAD` reads the spec from the working tree, so uncommitted `swag init` output counts; any other ref reads it from that commit.
-- `-out`, default `<dir of spec>/<name>.md`: changelog file path.
-- `-name`, default the head branch: name used in the header and the default file name (`/` becomes `-`). Required when the head is not a branch, e.g. a commit or a detached HEAD in CI.
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `-spec` | `docs/swagger.json` | spec to compare |
+| `-base` | `origin/HEAD` | git ref compared with |
+| `-head` | `HEAD` | git ref to compare |
+| `-out` | `<spec dir>/<name>.md` | changelog file path |
+| `-name` | head branch | header and file name |
+
+`-head HEAD` reads the spec from the working tree, so uncommitted `swag init` output counts; any other ref reads it from that commit. `-name` replaces `/` with `-` in the default file name and is required when the head is not a branch, e.g. a commit or a detached HEAD in CI.
 
 ## Makefile example
 
