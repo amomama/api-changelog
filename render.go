@@ -122,9 +122,7 @@ func addedParts(k endpointKey, head *view) []string {
 	}
 	parts = append(parts, escapeMarkdown(head.op.Description), contentTypes(head.op))
 	parts = append(parts, parameterList(head.params), requestBody(head.body))
-	for _, g := range groupResponses(head.resp) {
-		parts = append(parts, responseBlock(g, head))
-	}
+	parts = append(parts, responseBlocks(head.resp)...)
 	return slices.DeleteFunc(parts, isEmpty)
 }
 
@@ -190,7 +188,7 @@ type responseGroup struct {
 	codes   []string
 }
 
-func groupResponses(resp map[string]respView) []responseGroup {
+func responseBlocks(resp map[string]respView) []string {
 	var groups []responseGroup
 	for _, code := range slices.Sorted(maps.Keys(resp)) {
 		r := resp[code]
@@ -201,23 +199,23 @@ func groupResponses(resp map[string]respView) []responseGroup {
 		}
 		groups[i].codes = append(groups[i].codes, code)
 	}
-	return groups
-}
 
-func responseBlock(g responseGroup, head *view) string {
-	heading := "**Response** without body"
-	if g.name != "" {
-		heading = "**Response** `" + g.name + "`"
+	blocks := make([]string, len(groups))
+	for i, g := range groups {
+		heading := "**Response** without body"
+		if g.name != "" {
+			heading = "**Response** `" + g.name + "`"
+		}
+		lines := make([]string, len(g.codes))
+		for j, code := range g.codes {
+			lines[j] = fmt.Sprintf("`%s` %s", code, oneLine(escapeMarkdown(resp[code].description)))
+		}
+		blocks[i] = heading + partSeparator + bulletList(lines)
+		if g.name != "" {
+			blocks[i] += partSeparator + jsonBlock(g.example)
+		}
 	}
-	lines := make([]string, len(g.codes))
-	for i, code := range g.codes {
-		lines[i] = fmt.Sprintf("`%s` %s", code, oneLine(escapeMarkdown(head.resp[code].description)))
-	}
-	block := heading + partSeparator + bulletList(lines)
-	if g.name == "" {
-		return block
-	}
-	return block + partSeparator + jsonBlock(g.example)
+	return blocks
 }
 
 func Render(base, head []byte) (string, error) {
