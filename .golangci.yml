@@ -1,0 +1,52 @@
+version: "2"
+linters:
+  enable:
+    - bodyclose
+    - dogsled
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - mnd
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - noctx
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - copyloopvar
+
+  # don't enable:
+  # - revive
+  # - goimports
+  # - depguard
+  # - typecheck
+  # - asciicheck
+  # - scopelint
+  # - gochecknoglobals
+  # - gocognit
+  # - godot
+  # - godox
+  # - goerr113
+  # - interfacer
+  # - maligned
+  # - nestif
+  # - prealloc
+  # - testpackage
+  # - wsl
+  # - dupl
+  # - nolintlint
+  # - funlen
+
+formatters:
+  enable:
+    - gofmt
